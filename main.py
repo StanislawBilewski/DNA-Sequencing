@@ -1,4 +1,5 @@
 import random
+from os import listdir
 import time
 
 iter = 40
@@ -12,23 +13,31 @@ class Ant:
         self.route = [initialNode]
         for i in range(len(sightMatrix)):
             self.sightMatrix.append(sightMatrix[i].copy())
-            self.sightMatrix[i][self.currentNode] = 0
 
     def calcProbabilities(self, pheromones, alpha, beta):
         probabilities = []
         for i in range(len(self.sightMatrix)):
-            probabilities.append(
-                (pheromones[self.currentNode][i] ** alpha) *
-                (self.sightMatrix[self.currentNode][i] ** beta))
+            if i in self.route:                 # jeśli węzeł 'i' został już odwiedzony, to wtedy nie możemy go wykorzystać
+                probabilities.append(0)
+                probabilities.append(0)
+
+            else:
+                probabilities.append(           # prawdopodobieństwo przejścia z węzła 'currentNode' do węzła 'i' (doklejanie do końca)
+                    (pheromones[self.currentNode][i] ** alpha) *        # indeks w liscie 'probabilities' będzie parzysty
+                    (self.sightMatrix[self.currentNode][i] ** beta))
+                    
+                probabilities.append(           # prawdopodobieństwo przejścia z węzła 'i' do węzła 'initialNode' (doklejanie do początku)
+                    (pheromones[i][self.initialNode] ** alpha) *        # indeks w liscie 'probabilities' będzie nieparzysty
+                    (self.sightMatrix[i][self.initialNode] ** beta))
         temp = sum(probabilities)
 
         if(temp == 0):
-            return [0]*len(self.sightMatrix)
+            return [0]*len(probabilities)
 
-        for i in range(len(self.sightMatrix)):
+        for i in range(len(probabilities)):
             probabilities[i] = probabilities[i]/temp
 
-        for i in range(1,len(self.sightMatrix)):
+        for i in range(1,len(probabilities)):
             probabilities[i] += probabilities[i-1]
 
         return probabilities
@@ -39,12 +48,18 @@ class Ant:
         while temp > probabilities[nextNode]:
             nextNode += 1
 
-        self.totalGain += gainMatrix[self.currentNode][nextNode]
-        self.currentNode = nextNode
-        self.route.append(self.currentNode)
+        if nextNode%2 == 0:
+            nextNode = nextNode//2
+            self.totalGain += gainMatrix[self.currentNode][nextNode]
+            self.currentNode = nextNode
+            self.route.append(self.currentNode)
+        
+        else:
+            nextNode = nextNode//2
+            self.totalGain += gainMatrix[nextNode][self.initialNode]
+            self.initialNode = nextNode
+            self.route.insert(0, self.initialNode)
 
-        for i in range(len(self.sightMatrix)):
-            self.sightMatrix[i][self.currentNode] = 0
 
     def updatePheromones(self, pheromones):
         if(self.totalGain > 0):
@@ -106,7 +121,8 @@ def antColonyOptimization(
         epsilon = 0.5   # współczynnik parowania feromonu
     ):
 
-    for _ in range(iter):
+    for iteration in range(iter):
+        print("iteracja:",iteration)
         ants = []
         distance = 0
         distances = []
@@ -138,38 +154,62 @@ def antColonyOptimization(
     return shortestPath, distance
 
 
+for filename in listdir('inputs/'):
+    if(filename == 'Thumbs.db'):
+        continue
 
+    f = open('inputs/'+filename, "r")
 
-# input = open("data.txt", 'r')
-# inputPoints = loadPoints(input.read().split("\n"))
+    words = f.readlines()
 
-f = open("sequence.txt", "r")
+    for i in range(len(words)):
+        words[i] = words[i].strip('\n')
 
-words = f.readlines()
+    gainMatrix = getGainMatrix(words)
 
-for i in range(len(words)):
-	words[i] = words[i].strip('\n')
+    sightMatrix = getSightMatrix(gainMatrix)
+    paths = []
+    diss = []
 
-gainMatrix = getGainMatrix(words)
+    # print(gainMatrix)
 
-sightMatrix = getSightMatrix(gainMatrix)
-paths = []
-diss = []
-
-# print(gainMatrix)
-
-for initialNode in range(len(gainMatrix)):
     pheromoneMatrix = initPheromones(len(sightMatrix))
 
-    path, dis = antColonyOptimization(initialNode, sightMatrix)
-    paths.append(path)
-    diss.append(dis)
+    timetest = time.time()
+    path, gain = antColonyOptimization(0, sightMatrix, iter=60, nOfAnts=60)
+    timetest = time.time() - timetest
 
-temp = 0
-for i in range(len(paths)):
-    if(diss[i] > temp):
-        temp = diss[i]
-        path = paths[i]
+    seq = ""
+    l = len(words[0])
 
-print(path)
-print(temp)
+    for i in range(len(path)):
+        if seq == "":
+            seq = words[path[i]]
+
+        else:
+            for j in range(l):
+                if (words[path[i-1]][j:] == words[path[i]][:l - j]):
+                    seq += words[path[i]][l-j:]
+
+    print("Path:",path)
+    print("Gain:",gain)
+    print("seq:", seq)
+    print("Time:",timetest,"\n")
+
+    outputFile = open("outputs/" + filename, "w")
+
+    outputFile.write("Path:")
+    outputFile.write(path)
+    outputFile.write("\n")
+
+    outputFile.write("Gain:")
+    outputFile.write(gain)
+    outputFile.write("\n")
+    
+    outputFile.write("seq:")
+    outputFile.write(seq)
+    outputFile.write("\n")
+    
+    outputFile.write("Time:")
+    outputFile.write(timetest)
+    outputFile.write("\n")
