@@ -2,7 +2,8 @@ import random
 from os import listdir
 import time
 
-iter = 40
+iterations = 40
+antsNumber = 40
 
 class Ant:
     def __init__(self, initialNode=0, sightMatrix=[]):
@@ -154,8 +155,17 @@ def antColonyOptimization(
     return shortestPath, distance
 
 
+inp = input("Would you like to overwrite files that are already in output? (Y/N)")
+
+if inp == "Y":
+    outputs = []
+elif inp == "N":
+    outputs = listdir('outputs/')
+else:
+    exit
+
 for filename in listdir('inputs/'):
-    if(filename == 'Thumbs.db'):
+    if(filename == 'Thumbs.db' or filename in outputs):
         continue
 
     f = open('inputs/'+filename, "r")
@@ -168,15 +178,13 @@ for filename in listdir('inputs/'):
     gainMatrix = getGainMatrix(words)
 
     sightMatrix = getSightMatrix(gainMatrix)
-    paths = []
-    diss = []
 
     # print(gainMatrix)
 
     pheromoneMatrix = initPheromones(len(sightMatrix))
 
     timetest = time.time()
-    path, gain = antColonyOptimization(0, sightMatrix, iter=60, nOfAnts=60)
+    path, gain = antColonyOptimization(0, sightMatrix, iter=iterations, nOfAnts=antsNumber)
     timetest = time.time() - timetest
 
     seq = ""
@@ -191,25 +199,34 @@ for filename in listdir('inputs/'):
                 if (words[path[i-1]][j:] == words[path[i]][:l - j]):
                     seq += words[path[i]][l-j:]
 
+    print("Number of ants:",antsNumber)
+    print("Number of iterations:",iterations)
     print("Path:",path)
+    print("Length:",len(path))
+    print("Instance Length:",len(gainMatrix))
     print("Gain:",gain)
     print("seq:", seq)
+    print("Sequence Length:",len(seq))
     print("Time:",timetest,"\n")
 
     outputFile = open("outputs/" + filename, "w")
 
-    outputFile.write("Path:")
-    outputFile.write(path)
-    outputFile.write("\n")
+    outputFile.write("Number of ants: " + str(antsNumber) + "\n")
 
-    outputFile.write("Gain:")
-    outputFile.write(gain)
-    outputFile.write("\n")
+    outputFile.write("Number of iterations: " + str(iterations) + "\n")
+
+    outputFile.write("Path: [" + ', '.join([str(elem) for elem in path]) + "]\n")
     
-    outputFile.write("seq:")
-    outputFile.write(seq)
-    outputFile.write("\n")
+    outputFile.write("Length: " + str(len(path)) + "\n")
     
-    outputFile.write("Time:")
-    outputFile.write(timetest)
-    outputFile.write("\n")
+    outputFile.write("Instance Length: " + str(len(gainMatrix)) + "\n")
+
+    outputFile.write("Gain: " + str(gain) + "\n")
+    
+    outputFile.write("seq: " + seq + "\n")
+    
+    outputFile.write("Sequence Length:" + str(len(seq)) + "\n")
+    
+    outputFile.write("Time: " + str(timetest) + "\n")
+    
+    outputFile.close()
