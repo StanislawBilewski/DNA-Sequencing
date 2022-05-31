@@ -45,7 +45,7 @@ bool Ant::chooseNextNode(std::vector<std::vector<int>> &gainMatrix, std::vector<
         return false;
     }
 
-    probabilities[0] = probabilities[0]/2.0;
+    probabilities[0] = probabilities[0]/sum;
     for(int i = 1; i < probabilities.size(); i++){
         probabilities[i] = probabilities[i]/sum;
         probabilities[i] += probabilities[i-1];
@@ -69,9 +69,9 @@ bool Ant::chooseNextNode(std::vector<std::vector<int>> &gainMatrix, std::vector<
         this->totalGain += gainMatrix[nextNode][this->initialNode];
         this->initialNode = nextNode;
 
-        for(int i = 0; i < this->route1.size(); i++){
-            if(this->route1[i] == -1){
-                this->route1[i] = nextNode;
+        for(int i = 0; i < this->route2.size(); i++){
+            if(this->route2[i] == -1){
+                this->route2[i] = nextNode;
                 break;
             }
         }
@@ -93,9 +93,11 @@ bool Ant::chooseNextNode(std::vector<std::vector<int>> &gainMatrix, std::vector<
 }
 
 void Ant::updatePheromones(std::vector<std::vector<float>> &pheromones){
-    float temp = 1 - (1/((float) this->totalGain));
-    for(int i; i < this->route.size() - 1; i++){
-        pheromones[this->route[i]][this->route[i+1]] += temp;
+    updateRoute();
+    float temp = 1 - (1.0f/this->totalGain);
+    for(int i = 0; i < this->route.size() - 1; i++){
+        if(this->route[i+1] == -1) break;
+        else pheromones[this->route[i]][this->route[i+1]] += temp;
     }
 }
 

@@ -3,7 +3,7 @@ from os import listdir
 import time
 
 iterations = 40
-antsNumber = 40
+antsNumber = 20
 
 class Ant:
     def __init__(self, initialNode=0, sightMatrix=[]):
@@ -138,7 +138,7 @@ def antColonyOptimization(
             antno+=1
             while True:
                 probabilities = ant.calcProbabilities(pheromoneMatrix, alpha, beta)
-                if sum(probabilities) == 0:
+                if probabilities[-1] == 0:
                     break
                 ant.chooseNextNode(probabilities)
 
@@ -184,6 +184,13 @@ for filename in listdir('inputs/'):
 
     sightMatrix = getSightMatrix(gainMatrix)
 
+    for i in gainMatrix:
+        print(i)
+    
+    print()
+
+    for i in sightMatrix:
+        print(i)
     # print(gainMatrix)
 
     pheromoneMatrix = initPheromones(len(sightMatrix))
@@ -203,6 +210,7 @@ for filename in listdir('inputs/'):
             for j in range(l):
                 if (words[path[i-1]][j:] == words[path[i]][:l - j]):
                     seq += words[path[i]][l-j:]
+                    break
 
     print("Number of ants:",antsNumber)
     print("Number of iterations:",iterations)

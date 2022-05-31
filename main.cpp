@@ -4,73 +4,134 @@
 #include <fstream>
 #include <algorithm>
 #include <string>
-#include <chrono>
+#include <ctime>
 #include "functions.cpp"
 
 #define ITERATIONS 40
 #define ANTS 40
 
 int main(){
+    srand((unsigned int)time(NULL));
 
-    // printf("Would you like to overwrite files that are already in output? (Y/N) \n");
+    printf("Would you like to overwrite files that are already in output? (Y/N) \n");
 
-    // char ans;
-    // std::cin >> ans;
+    char ans;
+    std::cin >> ans;
 
-    std::fstream inputFile;
-    inputFile.open("inputs/9.200-80.txt", std::ios::in);
+    std::vector<std::string> out(0);
 
-    std::string data;
-    std::vector<std::string> words;
-    int i = 0;
-
-    while(getline(inputFile, data)){
-        words.push_back(data);
-
-        i++;
-    }
-    inputFile.close();
-
-    std::vector<std::vector<int>> gainMatrix = getGainMatrix(words);
-    std::vector<std::vector<float>> sightMatrix = getSightMatrix(gainMatrix);
-    std::pair<std::vector<int>, int> result;
-
-    auto start = std::chrono::high_resolution_clock::now();
-    result = antColonyOptimization(0, sightMatrix, gainMatrix, ITERATIONS, ANTS);
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start);
-
-    std::vector<int> path = result.first;
-    int gain = result.second;
-
-    std::string seq = "";
-    int l = words[0].length();
-
-    for(int i = 0; i < path.size(); i++){
-        if(i == 0){
-            seq = words[path[i]];
+    if(ans == 'N' || ans == 'n'){
+        for(const auto &entry : std::filesystem::directory_iterator("outputs")){
+            out.push_back(entry.path().string().erase(0,8));
         }
-        else{
-            for(int j = 0; j < l; j++){
-                if(words[i-1].substr(i,l-i) == words[i].substr(0,l-i)){
-                    seq += words[path[i]].substr(l-j, l-i);
+    }
+
+    bool skip;
+    std::fstream inputFile;
+    std::fstream outputFile;
+    std::string instanceName;
+
+    for(const auto &entry : std::filesystem::directory_iterator("inputs")){
+        skip = false;
+
+        instanceName = entry.path().string().erase(0,7);
+
+        for(auto fileToSkip : out){
+            if(instanceName == fileToSkip){
+                skip = true;
+                break;
+            }
+        }
+        if(skip == true){
+            continue;
+        }
+
+        inputFile.open(entry.path(), std::ios::in);
+
+        std::string data;
+        std::vector<std::string> words;
+        int i = 0;
+
+        while(getline(inputFile, data)){
+            words.push_back(data);
+
+            i++;
+        }
+        inputFile.close();
+
+        std::vector<std::vector<int>> gainMatrix = getGainMatrix(words);
+        std::vector<std::vector<float>> sightMatrix = getSightMatrix(gainMatrix);
+        std::pair<std::vector<int>, int> result;
+
+        auto start = time(NULL);
+        result = antColonyOptimization(sightMatrix.size()/2, sightMatrix, gainMatrix, ITERATIONS, ANTS);
+        auto duration = time(NULL) - start;
+
+        std::vector<int> path = result.first;
+        int gain = result.second;
+
+        std::string seq = "";
+        int l = words[0].length();
+
+        for(int i = 0; i < path.size(); i++){
+            if(path[i] == -1) break;
+            if(i == 0){
+                seq = words[path[i]];
+            }
+            else{
+                for(int j = 0; j < l; j++){
+                    auto a = words[path[i-1]].substr(j,l-j);
+                    auto b = words[path[i]].substr(0,l-j);
+                    if(a == b){
+                        seq += words[path[i]].substr(l-j, j);
+                        break;
+                    }
                 }
             }
         }
+
+        printf("Number of ants: %d \n", ANTS);
+        printf("Number of iterations: %d \n", ITERATIONS);
+        printf("Path: [");
+        int pathLength = 0;
+        for(int i = 0; i < path.size(); i++){
+            if(path[i] == -1) break;
+            else{
+                pathLength += 1;
+                printf("%d", path[i]);
+                if(i+1 < path.size() && path[i+1] != -1) printf(", ");
+            }
+        }
+        printf("]\n");
+        printf("Length: %d \n",pathLength);
+        printf("Instance Length: %d \n",gainMatrix.size());
+        printf("Gain: %d \n",gain);
+        printf("seq: ");
+        std::cout << seq << std::endl;
+        printf("Sequence Length: %d \n",seq.length());
+        printf("Time: %d seconds\n",duration);
+
+        outputFile.open("outputs\\" + instanceName, std::ios::out);
+        outputFile << "Number of ants: " << ANTS << "\n";
+        outputFile << "Number of iterations: " << ANTS << "\n";
+        outputFile << "Path: [";
+        for(int i = 0; i < path.size(); i++){
+            if(path[i] == -1) break;
+            else{
+                outputFile << path[i];
+                if(i+1 < path.size() && path[i+1] != -1) outputFile << ", ";
+            }
+        }
+        outputFile << "]\n";
+        outputFile << "Length: " << pathLength << "\n";
+        outputFile << "Instance Length: " << gainMatrix.size() << "\n";
+        outputFile << "Gain: " << gain << "\n";
+        outputFile << "seq: " << seq.c_str() << "\n";
+        outputFile << "Sequence Length: " << seq.length() << "\n";
+        outputFile << "Time: " << duration << " seconds\n";
     }
 
-    printf("Number of ants: %d \n", ANTS);
-    printf("Number of iterations: %d \n", ITERATIONS);
-    printf("Path: [");
-    for(int i = 0; i < path.size()-1; i++){
-        printf("%d, ", path[i]);
-    }
-    printf("%d]\n", path[path.size()-1]);
-    printf("Length: %d \n",path.size());
-    printf("Instance Length: %d \n",gainMatrix.size());
-    printf("Gain: %d \n",gain);
-    printf("seq: %s \n", seq);
-    printf("Sequence Length: %d \n",seq.length());
-    printf("Time: %d \n",duration);
+    getchar();
     
     return 0;
 }

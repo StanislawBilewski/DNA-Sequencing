@@ -10,15 +10,23 @@ std::vector<std::vector<int>> getGainMatrix(std::vector<std::string> input){
 
     for(int x = 0; x < S; x++){
         for(int y = 0; y < S; y++){
-            if(input[x] == input[y]) break;
+            if(input[x] == input[y]) continue;
             for(int i = 0; i < l; i++){
-                if(input[x].substr(i,l) == input[y].substr(0,l-i)){
+                if(input[x].substr(i,l-i) == input[y].substr(0,l-i)){
                     gainMatrix[x][y] = l - i;
                     break;
                 }
             }
         }
     }
+
+    // for(int x = 0; x<S; x++){
+    //     printf("[");
+    //     for(int y = 0; y<S-1; y++){
+    //         printf("%d, ", gainMatrix[x][y]);
+    //     }
+    //     printf("%d]\n", gainMatrix[x][S-1]);
+    // }
 
     return gainMatrix;
 }
@@ -37,13 +45,13 @@ std::vector<std::vector<float>> getSightMatrix(std::vector<std::vector<int>> gai
 }
 
 std::vector<std::vector<float>> initPheromones(int length){
-    std::vector<std::vector<float>> pheromones(length, std::vector<float>(length, 1));
+    std::vector<std::vector<float>> pheromones(length, std::vector<float>(length, 1.0f));
     return pheromones;
 }
 
 void vaporization(std::vector<std::vector<float>> &pheromoneMatrix, float epsilon){
     for(int i = 0; i < pheromoneMatrix.size(); i++){
-        for(int j = 0; j < pheromoneMatrix.size(); j++){
+        for(int j = 0; j < pheromoneMatrix[i].size(); j++){
             pheromoneMatrix[i][j] *= (1-epsilon);
         }
     }
@@ -65,7 +73,6 @@ std::pair<std::vector<int>, int> antColonyOptimization(
 
     for(int i = 0; i < iterations; i++){
         printf("Iteration: %d\n", i);
-        gain = 0;
 
         std::vector<Ant> ants;
 
@@ -74,7 +81,7 @@ std::pair<std::vector<int>, int> antColonyOptimization(
         }
 
         for(int antNo = 0; antNo < nOfAnts; antNo++){
-            printf("\tAnt number: %d\n", antNo);
+            // printf("\tAnt number: %d\n", antNo);
             while(ants[antNo].chooseNextNode(gainMatrix, pheromoneMatrix, alpha, beta)){}
             if(ants[antNo].getGain() > gain || gain == 0){
                 gain = ants[antNo].getGain();
@@ -87,7 +94,21 @@ std::pair<std::vector<int>, int> antColonyOptimization(
         for(int antNo = 0; antNo < nOfAnts; antNo++){
             ants[antNo].updatePheromones(pheromoneMatrix);
         }
+
+        ants.clear();
     }
 
-    return std::make_pair(path, gain);
+    std::pair<std::vector<int>, int> output;
+
+    output = std::make_pair(path, gain);
+    output.first = path;
+    output.second = gain;
+
+    for(int i = 0; i<pheromoneMatrix.size(); i++){
+        pheromoneMatrix[i].clear();
+    }
+
+    pheromoneMatrix.clear();
+
+    return output;
 }
