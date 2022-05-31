@@ -129,6 +129,8 @@ int main(){
         outputFile << "seq: " << seq.c_str() << "\n";
         outputFile << "Sequence Length: " << seq.length() << "\n";
         outputFile << "Time: " << duration << " seconds\n";
+
+        outputFile.close();
     }
 
     getchar();
