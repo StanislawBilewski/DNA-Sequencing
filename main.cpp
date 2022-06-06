@@ -11,6 +11,8 @@
 #define ANTS 40
 
 int main(){
+    int orgLength;
+
     srand((unsigned int)time(NULL));
 
     printf("Would you like to overwrite files that are already in output? (Y/N) \n");
@@ -30,9 +32,11 @@ int main(){
     std::fstream inputFile;
     std::fstream outputFile;
     std::string instanceName;
+    std::string orgLengthStr;
 
     for(const auto &entry : std::filesystem::directory_iterator("inputs")){
         skip = false;
+        orgLengthStr = "";
 
         instanceName = entry.path().string().erase(0,7);
 
@@ -62,16 +66,34 @@ int main(){
         std::vector<std::vector<int>> gainMatrix = getGainMatrix(words);
         std::vector<std::vector<float>> sightMatrix = getSightMatrix(gainMatrix);
         std::pair<std::vector<int>, int> result;
+        int l = words[0].length();
+        
+        for (int i = 0; i < instanceName.length(); i++)
+        {
+            if(instanceName[i] == '.'){
+                i++;
+                for (int j = i; j < instanceName.length(); j++)
+                {
+                    if(instanceName[j]=='+' || instanceName[j]=='-')
+                        break;
+                    else
+                        orgLengthStr += instanceName[j];
+                }
+                break;
+            }
+        }
 
-        auto start = time(NULL);
-        result = antColonyOptimization(sightMatrix.size()/2, sightMatrix, gainMatrix, ITERATIONS, ANTS);
-        auto duration = time(NULL) - start;
+        orgLength = atoi(orgLengthStr.c_str());
+        orgLength += 9;
+
+        auto start = time(nullptr);
+        result = antColonyOptimization(sightMatrix.size()/2, sightMatrix, gainMatrix, l, orgLength, ITERATIONS, ANTS);
+        auto duration = time(nullptr) - start;
 
         std::vector<int> path = result.first;
         int gain = result.second;
 
         std::string seq = "";
-        int l = words[0].length();
 
         for(int i = 0; i < path.size(); i++){
             if(path[i] == -1) break;
