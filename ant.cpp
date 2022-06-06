@@ -1,10 +1,13 @@
 #include "ant.hpp"
 
-Ant::Ant(int initialNode, std::vector<std::vector<float>> sightMatrix){
+Ant::Ant(int initialNode, const std::vector<std::vector<float>> &sightMatrix, int wordLength, int orgLength){
     this->totalGain = 0;
+    this->seqLength = wordLength;
     this->initialNode = initialNode;
     this->currentNode = initialNode;
     this->sightMatrix = sightMatrix;
+    this->wordLength = wordLength;
+    this->orgLength = orgLength;
     this->route.resize(sightMatrix.size(), -1);
     this->route1.resize(sightMatrix.size(), -1);
     this->route2.resize(sightMatrix.size(), -1);
@@ -26,6 +29,7 @@ bool Ant::visited(int node){
 
 bool Ant::chooseNextNode(std::vector<std::vector<int>> &gainMatrix, std::vector<std::vector<float>> &pheromones, float alpha, float beta){
     // Calculate probabilities
+
     std::vector<float> probabilities(2*this->sightMatrix.size(), 0);
 
     int sum = 0;
@@ -58,6 +62,8 @@ bool Ant::chooseNextNode(std::vector<std::vector<int>> &gainMatrix, std::vector<
 
     while(choice > probabilities[nextNode]){
         nextNode += 1;
+        if(nextNode == probabilities.size()-1)
+            break;
     }
 
     if(nextNode == this->currentNode){
@@ -66,6 +72,13 @@ bool Ant::chooseNextNode(std::vector<std::vector<int>> &gainMatrix, std::vector<
 
     if(nextNode%2){     //if nextNode can't be divided by 2
         nextNode = nextNode/2;
+
+        this->seqLength += this->wordLength - gainMatrix[nextNode][this->initialNode];
+
+        if(this->seqLength > this->orgLength){
+            return false;
+        }
+
         this->totalGain += gainMatrix[nextNode][this->initialNode];
         this->initialNode = nextNode;
 
@@ -78,6 +91,13 @@ bool Ant::chooseNextNode(std::vector<std::vector<int>> &gainMatrix, std::vector<
     }
     else{               //if nextNode can be divided by 2
         nextNode = nextNode/2;
+
+        this->seqLength += this->wordLength - gainMatrix[this->currentNode][nextNode];
+
+        if(this->seqLength > this->orgLength){
+            return false;
+        }
+
         this->totalGain += gainMatrix[this->currentNode][nextNode];
         this->currentNode = nextNode;
 

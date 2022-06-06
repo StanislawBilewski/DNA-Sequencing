@@ -1,5 +1,6 @@
 #include <vector>
 #include <math.h>
+#include <string>
 #include "Ant.cpp"
 
 std::vector<std::vector<int>> getGainMatrix(std::vector<std::string> input){
@@ -44,7 +45,7 @@ std::vector<std::vector<float>> getSightMatrix(std::vector<std::vector<int>> gai
     return sightMatrix;
 }
 
-std::vector<std::vector<float>> initPheromones(int length){
+std::vector<std::vector<float>> initPheromones(unsigned int length){
     std::vector<std::vector<float>> pheromones(length, std::vector<float>(length, 1.0f));
     return pheromones;
 }
@@ -58,9 +59,11 @@ void vaporization(std::vector<std::vector<float>> &pheromoneMatrix, float epsilo
 }
 
 std::pair<std::vector<int>, int> antColonyOptimization(
-    int initialNode,
-    std::vector<std::vector<float>> sightMatrix,
+    unsigned int initialNode,
+    const std::vector<std::vector<float>>& sightMatrix,
     std::vector<std::vector<int>> gainMatrix,
+    int wordLength,
+    int orgLength,
     int iterations = 40,
     int nOfAnts = 40,
     float alpha = 1,
@@ -77,7 +80,7 @@ std::pair<std::vector<int>, int> antColonyOptimization(
         std::vector<Ant> ants;
 
         for(int x = 0; x < nOfAnts; x++){
-            ants.push_back(Ant(initialNode, sightMatrix));
+            ants.emplace_back(initialNode, sightMatrix, wordLength, orgLength);
         }
 
         for(int antNo = 0; antNo < nOfAnts; antNo++){
